@@ -19,30 +19,28 @@ import ManualCom from './page.client'
 import dayjs from 'dayjs'
 //import PageClient from './page.client'
 type Menu={title:string, content?:any, children?:Menu[], expand?:boolean}
-export async function generateStaticParams() {
+/*export async function generateStaticParams() {
   const payload = await getPayloadHMR({ config: configPromise })
-  const careers = await payload.find({
-    collection: 'manuals',
+  const manuals = await payload.find({
+    collection: 'manual-geoswmm',
     draft: false,
     limit: 1000,
     overrideAccess: false,
   })
 
-  return careers?.docs?.map(({ slug }) => slug)
-}
+  return manuals?.docs?.map(({ slug }) => slug)
+}*/
 
-export default async function Post({ params: { slug = '' } }) {
-  const url = '/manual/' + slug
-  const manual = await queryManualBySlug({ slug })
+export const metadata: Metadata = {
+  title: "GeoSWMM User Manual | Utilian",
+  description: "View our user manual to better understand the ins-and-outs of GeoSWMM and its many features.",
+};
 
-  const footer: Header = await getCachedGlobal('header')()
-
-  const navItems = footer?.navItems?.filter(it=>it.link.parent==='Manual').map(it=>({title:it.link.label, url:it.link.url, children:[]}))
- 
- 
-  if (!manual) return <PayloadRedirects url={url} />
-  var items=manual.items?.reduce((acc, block)=>{
+const getItems=(manual: ManualGeoswmm)=> manual?.items?.reduce((acc, block)=>{
     switch (block.blockType) {
+      case 'doc':
+        acc.push({title:'self', content:block.content})
+        break
       case 'doc-title':
         acc.push({title:block.title, content:block.content})
         break;
@@ -77,50 +75,70 @@ export default async function Post({ params: { slug = '' } }) {
         break;
     }
     return acc;
-  }, [] as Menu[])
-  
-  const found=navItems?.find(it=>it.url?.endsWith(slug))
+  }, [] as Menu[])??[]
+
+
+const PageComponent = async ({ params, searchParams }:any) => {
+  const { q } = await searchParams
+  const { slug } = await params
+  const manual = await queryManualBySlug(slug )()
+  const menu: Manus = await getCachedGlobal('menu')()
+  const navItems = menu?.navItems?.filter(it=>it.link.parent==='Geoswmm').map(it=>({title:it.link.label, url:it.link.url, children:[], directContent:it.link.directContent}))??[]
+  const topics = getItems((await queryManualBySlug('topics' )()))
+  let found=navItems.find(it=>it.url?.endsWith(slug)) as any
   if(found){
+    const items=getItems(manual)
+    if(found.directContent){
+      found.content=items[0].content
+      found.active=found.title
+    } else{
     found.children=items
     found.expand=true
+    if(q){
+       bindMenuWithQueryStr(q.split('/'), found)
+    }else{
+      items[0].active=items[0].title
+    }
+    }
   }
   return (
-    <article className="container">
-      {/* Allows redirects for valid pages too */}
-      <PayloadRedirects disableNotFound url={url} />
-      
-      <ManualCom menuList={navItems}/>
-      
+    <article className="p-4">
+      {/* <PayloadRedirects disableNotFound url={url} /> */}
+      <ManualCom menuList={navItems as any} topics={topics as any}/>
     </article>
   )
+};
+
+export default PageComponent;
+
+function bindMenuWithQueryStr( arr:string[], item?:Menu,){
+    if(item && arr.length>0){
+      item.expand=true
+      if(arr.length==1){
+        const t=item.children?.find(it=>it.title===arr[0])
+        if(t)t.active=arr[0]
+      }
+      bindMenuWithQueryStr(arr.slice(1), item.children?.find(it=>it.title===arr[0]))
+    }
 }
 
-export async function generateMetadata({
-  params: { slug },
-}: {
-  params: { slug: string }
-}): Promise<Metadata> {
-  const manual = await queryManualBySlug({ slug })
-
-  return generateMeta({ doc: manual })
-}
-
-const queryManualBySlug = cache(async ({ slug }: { slug: string }) => {
-  const { isEnabled: draft } = draftMode()
-
-  const payload = await getPayloadHMR({ config: configPromise })
-
-  const result = await payload.find({
-    collection: 'manuals',
-    draft,
-    limit: 4,
-    overrideAccess: true,
-    where: {
-      slug: {
-        equals: slug,
+const queryManualBySlug =(slug: string ) => unstable_cache(async () => {
+    const { isEnabled:draft } = await draftMode()
+  
+    const payload = await getPayloadHMR({ config: configPromise })
+  
+    const result = await payload.find({
+      collection: 'manual-geoswmm',
+      draft,
+      limit: 4,
+      overrideAccess: true,
+      where: {
+        slug: {
+          equals: slug,
+        },
       },
-    },
-  })
-
-  return result.docs?.[0] || null
-})
+    })
+  
+    return result.docs?.[0] || []
+  },[slug],{tags:[`${slug}`]})
+  
