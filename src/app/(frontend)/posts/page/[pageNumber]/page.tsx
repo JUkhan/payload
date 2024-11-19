@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next/types'
 
 import { CollectionArchive } from '@/components/CollectionArchive'
@@ -9,8 +10,13 @@ import React from 'react'
 
 export const dynamic = 'force-static'
 export const revalidate = 600
-
-export default async function Page({ params: { pageNumber = 2 } }) {
+type Args = {
+  params: Promise<{
+    pageNumber: number
+  }>
+}
+export default async function Page({ params}:Args) {
+  const {pageNumber=2}=await params
   const payload = await getPayloadHMR({ config: configPromise })
 
   const posts = await payload.find({
@@ -48,7 +54,7 @@ export default async function Page({ params: { pageNumber = 2 } }) {
   )
 }
 
-export function generateMetadata({ params: { pageNumber = 2 } }): Metadata {
+/*export function generateMetadata({ params: { pageNumber = 2 } }): Metadata {
   return {
     title: `Payload Website Template Posts Page ${pageNumber}`,
   }
@@ -70,3 +76,4 @@ export async function generateStaticParams() {
 
   return pages
 }
+*/

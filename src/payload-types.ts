@@ -22,6 +22,9 @@ export interface Config {
     'product-inqueries': ProductInquery;
     clients: Client;
     manuals: Manual;
+    'post-comments': PostComment;
+    'chat-group': ChatGroup;
+    'chat-message': ChatMessage;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -90,6 +93,7 @@ export interface Page {
           link: {
             type?: ('reference' | 'custom') | null;
             newTab?: boolean | null;
+            directContent?: boolean | null;
             reference?: {
               relationTo: 'pages';
               value: string | Page;
@@ -189,6 +193,7 @@ export interface CallToActionBlock {
         link: {
           type?: ('reference' | 'custom') | null;
           newTab?: boolean | null;
+          directContent?: boolean | null;
           reference?: {
             relationTo: 'pages';
             value: string | Page;
@@ -232,6 +237,7 @@ export interface ContentBlock {
         link?: {
           type?: ('reference' | 'custom') | null;
           newTab?: boolean | null;
+          directContent?: boolean | null;
           reference?: {
             relationTo: 'pages';
             value: string | Page;
@@ -905,17 +911,11 @@ export interface Manual {
   id: string;
   title: string;
   items: (SubMenu | DocContent | DocContentTitle)[];
-  meta?: {
-    title?: string | null;
-    image?: (string | null) | Media;
-    description?: string | null;
-  };
   publishedAt?: string | null;
   slug?: string | null;
   slugLock?: boolean | null;
   updatedAt: string;
   createdAt: string;
-  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1014,6 +1014,51 @@ export interface DocContentTitle {
   id?: string | null;
   blockName?: string | null;
   blockType: 'doc-title';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "post-comments".
+ */
+export interface PostComment {
+  id: string;
+  postId: string;
+  userId?: string | null;
+  userName: string;
+  comment: string;
+  replyId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-group".
+ */
+export interface ChatGroup {
+  id: string;
+  groupName: string;
+  isPrivate: boolean;
+  users?:
+    | {
+        userId: string;
+        name?: string | null;
+        email?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-message".
+ */
+export interface ChatMessage {
+  id: string;
+  groupId: string;
+  userName: string;
+  message: string;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1135,6 +1180,18 @@ export interface PayloadLockedDocument {
         value: string | Manual;
       } | null)
     | ({
+        relationTo: 'post-comments';
+        value: string | PostComment;
+      } | null)
+    | ({
+        relationTo: 'chat-group';
+        value: string | ChatGroup;
+      } | null)
+    | ({
+        relationTo: 'chat-message';
+        value: string | ChatMessage;
+      } | null)
+    | ({
         relationTo: 'redirects';
         value: string | Redirect;
       } | null)
@@ -1204,6 +1261,7 @@ export interface Header {
         link: {
           type?: ('reference' | 'custom') | null;
           newTab?: boolean | null;
+          directContent?: boolean | null;
           reference?: {
             relationTo: 'pages';
             value: string | Page;
@@ -1229,6 +1287,7 @@ export interface Footer {
         link: {
           type?: ('reference' | 'custom') | null;
           newTab?: boolean | null;
+          directContent?: boolean | null;
           reference?: {
             relationTo: 'pages';
             value: string | Page;

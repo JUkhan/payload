@@ -2,10 +2,10 @@
 import React, { useEffect, useRef } from 'react'
 import {Textarea} from '@/components/ui/textarea'
 import {Button} from '@/components/ui/button'
-import { useUser } from "@/providers/user-provider";
+//import { useUser } from "@/providers/user-provider";
 
 const UpdateComment = ({item, onUpdate, cb}:{item:any, onUpdate:any, cb:any}) => {
-    const {user}=useUser()
+    //const {user}=useUser()
     const [comment, setComment]=React.useState(item.comment)
     const [hide, setHide]=React.useState(false)
     const txtRef=useRef<any>()

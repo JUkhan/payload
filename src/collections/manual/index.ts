@@ -28,81 +28,39 @@ export const Manuals: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['title', 'slug', 'updatedAt'],
-    livePreview: {
-      url: ({ data }) => {
-        const path = generatePreviewPath({
-          slug: typeof data?.slug === 'string' ? data.slug : '',
-          collection: 'careers' as any,
-        })
-
-        return `${process.env.NEXT_PUBLIC_SERVER_URL}${path}`
-      },
-    },
-    preview: (data) => {
-      const path = generatePreviewPath({
-        slug: typeof data?.slug === 'string' ? data.slug : '',
-        collection: 'careers' as any,
-      })
-
-      return `${process.env.NEXT_PUBLIC_SERVER_URL}${path}`
-    },
     useAsTitle: 'title',
   },
   fields: [
     {
-      name: 'title',
-      type: 'text',
-      required: true,
+        name: 'title',
+        type: 'text',
+        required: true,
     },
     {
-      type: 'tabs',
-      tabs: [
-        {
-          label: 'Content',
-          fields: [
-            {
-              name: 'items',
-              type: 'blocks',
-              blocks: [SubMenuBlock, DocContent, DocContentWithTitle],
-              required: true,
-            },
-          ],
-        },
-        {
-          name: 'meta',
-          label: 'SEO',
-          fields: [
-            OverviewField({
-              titlePath: 'meta.title',
-              descriptionPath: 'meta.description',
-              imagePath: 'meta.image',
-            }),
-            MetaTitleField({
-              hasGenerateFn: true,
-            }),
-            MetaImageField({
-              relationTo: 'media',
-            }),
-
-            MetaDescriptionField({}),
-            PreviewField({
-              // if the `generateUrl` function is configured
-              hasGenerateFn: true,
-
-              // field paths to match the target field for data
-              titlePath: 'meta.title',
-              descriptionPath: 'meta.description',
-            }),
-          ],
-        },
-      ],
+      name: 'items',
+      type: 'blocks',
+      blocks: [SubMenuBlock, DocContent, DocContentWithTitle],
+      required: true,
     },
     {
       name: 'publishedAt',
       type: 'date',
       admin: {
+        date:{
+          pickerAppearance:'dayAndTime'
+        },
         position: 'sidebar',
       },
+      hooks:{
+        beforeChange: [
+          ({ siblingData, value }) => {
+            if (siblingData._status === 'published' && !value) {
+              return new Date()
+            }
+            return value
+          },
+        ],
+      }
     },
     ...slugField(),
   ],
@@ -110,12 +68,4 @@ export const Manuals: CollectionConfig = {
     afterChange: [revalidatePage],
     beforeChange: [populatePublishedAt],
   },
-  versions: {
-    drafts: {
-      autosave: {
-        interval: 100, // We set this interval for optimal live preview
-      },
-    },
-    maxPerDoc: 50,
-  },
-}
+};

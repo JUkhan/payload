@@ -25,9 +25,9 @@ import { fileURLToPath } from 'url'
 import Categories from './collections/Categories'
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
-import {Manuals} from './collections/manual'
+import { Manuals } from './collections/manual'
 import { Posts } from './collections/Posts'
-import { Careers} from './collections/Careers'
+import { Careers } from './collections/Careers'
 import JobTypes from './collections/Jobtypes'
 import JobLocations from './collections/Joblocations'
 import Users from './collections/Users'
@@ -43,6 +43,8 @@ import { beforeSyncWithSearch } from '@/search/beforeSync'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import ProductInquery from './collections/ProductInquery'
 import Clients from './collections/Clients'
+import PostComments from './collections/PostComments'
+import { ChatGroup, ChatMessage } from './collections/ChatGroup'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -58,20 +60,23 @@ const generateURL: GenerateURL<Post | Page> = ({ doc }) => {
 }
 
 export default buildConfig({
-  email:  process.env.EMAIL_ACTIVE==='true'? nodemailerAdapter({
-    transportOptions: {
-      host: process.env.SMTP_HOST,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      port: Number(process.env.SMTP_HOST),
-      secure: Number(process.env.SMTP_PORT) === 465, // true for port 465, false (the default) for 587 and others
-      //requireTLS: true,
-    },
-    defaultFromName: process.env.EMAIL_FROM_NAME!,
-    defaultFromAddress: process.env.EMAIL_FROM_ADDRESS!,
-  }):undefined,
+  email:
+    process.env.EMAIL_ACTIVE === 'true'
+      ? nodemailerAdapter({
+          transportOptions: {
+            host: process.env.SMTP_HOST,
+            auth: {
+              user: process.env.SMTP_USER,
+              pass: process.env.SMTP_PASS,
+            },
+            port: Number(process.env.SMTP_HOST),
+            secure: Number(process.env.SMTP_PORT) === 465, // true for port 465, false (the default) for 587 and others
+            //requireTLS: true,
+          },
+          defaultFromName: process.env.EMAIL_FROM_NAME!,
+          defaultFromAddress: process.env.EMAIL_FROM_ADDRESS!,
+        })
+      : undefined,
   admin: {
     components: {
       // The `BeforeLogin` component renders a message that you see while logging into your admin panel.
@@ -143,7 +148,22 @@ export default buildConfig({
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
   }),
-  collections: [Pages, Posts, Media, Categories, Users, JobLocations, JobTypes, Careers, ProductInquery, Clients, Manuals,],
+  collections: [
+    Pages,
+    Posts,
+    Media,
+    Categories,
+    Users,
+    JobLocations,
+    JobTypes,
+    Careers,
+    ProductInquery,
+    Clients,
+    Manuals,
+    PostComments,
+    ChatGroup,
+    ChatMessage
+  ],
   cors: [process.env.PAYLOAD_PUBLIC_SERVER_URL || ''].filter(Boolean),
   csrf: [process.env.PAYLOAD_PUBLIC_SERVER_URL || ''].filter(Boolean),
   endpoints: [
@@ -157,7 +177,6 @@ export default buildConfig({
   ],
   globals: [Header, Footer],
   plugins: [
-   
     redirectsPlugin({
       collections: ['pages', 'posts'],
       overrides: {

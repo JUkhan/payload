@@ -3,15 +3,16 @@
 import React from 'react'
 import {Textarea} from '@/components/ui/textarea'
 import {Button} from '@/components/ui/button'
-import { useUser } from "@/providers/user-provider";
+import { User } from '@/payload-types'
+//import { useUser } from "@/providers/user-provider";
 
-const AddComment = ({postId, addComment}:{postId:string, addComment:any}) => {
-    const {user}=useUser()
+const AddComment = ({postId, addComment, user}:{postId:string, addComment:any, user:User}) => {
+    //const {user}=useUser()
     const [comment, setComment]=React.useState('')
     const [hide, setHide]=React.useState(true)
     const addHandler=async ()=>{
         await addComment({
-            comment, postId, replyId:'', userName:`${user?.firstName} ${user?.lastName}`, userId:user?.id
+            comment, postId, replyId:'', userName:`${user?.name}`, userId:user?.id
         })
         setHide(true);setComment(_=>'')
     }

@@ -14,6 +14,8 @@ import { InitTheme } from '@/providers/Theme/InitTheme'
 import { mergeOpenGraph } from '@/utilities/mergeOpenGraph'
 import './globals.css'
 import { draftMode } from 'next/headers'
+import ChatWindow from '@/components/chat/chatWindow'
+
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   //const { isEnabled } = draftMode()
@@ -35,6 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <LivePreviewListener />
 
           <Header />
+          <ChatWindow/>
           {children}
           <Footer />
         </Providers>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useUser } from "@/providers/user-provider";
-import type { PostComment } from "@/payload-types";
+//import { useUser } from "@/providers/user-provider";
+import type { PostComment, User } from "@/payload-types";
 import { EllipsisVertical } from "lucide-react";
 import {
   AlertDialog,
@@ -24,9 +24,10 @@ type props = {
   item: PostComment;
   onUpdate: any;
   onDelete: any;
+  user:User
 };
-const Mutate = ({ item, onUpdate, onDelete }: props) => {
-  const { user } = useUser();
+const Mutate = ({ item, onUpdate, onDelete, user }: props) => {
+  //const { user } = useUser();
   const [open, setOPen] = useState(false);
   const [update, setUpdate] = useState(false);
   if (!(user && user.id === item.userId)) return null;

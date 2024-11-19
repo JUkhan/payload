@@ -15,6 +15,7 @@ import { PostHero } from '@/heros/PostHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import { formatDateTime } from '@/utilities/formatDateTime'
 import ManualCom from './page.client'
+import { unstable_cache } from 'next/cache'
 
 import dayjs from 'dayjs'
 //import PageClient from './page.client'
@@ -82,8 +83,9 @@ const PageComponent = async ({ params, searchParams }:any) => {
   const { q } = await searchParams
   const { slug } = await params
   const manual = await queryManualBySlug(slug )()
-  const menu: Manus = await getCachedGlobal('menu')()
-  const navItems = menu?.navItems?.filter(it=>it.link.parent==='Geoswmm').map(it=>({title:it.link.label, url:it.link.url, children:[], directContent:it.link.directContent}))??[]
+  console.log(manual)
+  const menu: Manus = await getCachedGlobal('header')()
+  const navItems = menu?.navItems?.filter(it=>it.link.parent==='Manual').map(it=>({title:it.link.label, url:it.link.url, children:[], directContent:it.link.directContent}))??[]
   const topics = getItems((await queryManualBySlug('topics' )()))
   let found=navItems.find(it=>it.url?.endsWith(slug)) as any
   if(found){
@@ -128,7 +130,7 @@ const queryManualBySlug =(slug: string ) => unstable_cache(async () => {
     const payload = await getPayloadHMR({ config: configPromise })
   
     const result = await payload.find({
-      collection: 'manual-geoswmm',
+      collection: 'manuals',
       draft,
       limit: 4,
       overrideAccess: true,

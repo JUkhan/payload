@@ -62,6 +62,18 @@ export const link: LinkType = ({ appearances, disableLabel = false, overrides = 
             },
             label: 'Open in new tab',
           },
+          {
+            name:"directContent",
+            type:"checkbox",
+            admin: {
+              style: {
+                alignSelf: 'flex-end',
+              },
+              width: '25%',
+            },
+            defaultValue:false,
+            label:"Has Direct Content"
+          }
         ],
       },
     ],

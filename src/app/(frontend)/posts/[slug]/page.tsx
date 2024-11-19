@@ -1,78 +1,122 @@
 import type { Metadata } from 'next'
 
-import { RelatedPosts } from '@/blocks/RelatedPosts/Component'
-import { PayloadRedirects } from '@/components/PayloadRedirects'
+
 import configPromise from '@payload-config'
 import { getPayloadHMR } from '@payloadcms/next/utilities'
 import { draftMode, headers } from 'next/headers'
 import React, { cache } from 'react'
 import RichText from '@/components/RichText'
 
-import type { Post } from '@/payload-types'
+import type { Post, PostComment } from '@/payload-types'
 
 import { PostHero } from '@/heros/PostHero'
-import { generateMeta } from '@/utilities/generateMeta'
-import PageClient from './page.client'
+import AddComment from './add.comment'
+import {unstable_cache, revalidateTag } from 'next/cache'
+import Comment from './comment'
+import {getMeUser} from '@/utilities/getMeUser'
 
-export async function generateStaticParams() {
+
+ async function addComment(comment:any){
+    'use server'
+    const payload = await getPayloadHMR({ config: configPromise })
+    const newComment = await payload.create({
+      collection: 'post-comments',
+      data: comment,
+    })
+    revalidateTag(comment.postId)
+}
+async function updateComment(comment:any){
+  'use server'
   const payload = await getPayloadHMR({ config: configPromise })
-  const posts = await payload.find({
-    collection: 'posts',
-    draft: false,
-    limit: 1000,
-    overrideAccess: false,
+  const newComment = await payload.update({
+    collection:'post-comments',
+    data:comment,
+    where:{
+      id:{equals:comment.id}
+    }
   })
-
-  return posts.docs?.map(({ slug }) => slug)
+  revalidateTag(comment.postId)
+}
+async function deleteComment(comment:any){
+  'use server'
+  const payload = await getPayloadHMR({ config: configPromise })
+  const newComment = await payload.delete({
+    collection: 'post-comments',
+    where:{
+      id:{equals:comment.id}
+    }
+  })
+  revalidateTag(comment.postId)
 }
 
-export default async function Post({ params: { slug = '' } }) {
-  const url = '/posts/' + slug
-  const post = await queryPostBySlug({ slug })
+const loadComments= (postId:string)=>unstable_cache(async ()=>{
+  
+  const payload = await getPayloadHMR({ config: configPromise })
+  const comments = await payload.find({
+    collection: 'post-comments',
+    depth:1,
+    where: {
+      postId: {
+        equals: postId,
+      },
+    },
+    limit:1000
+  })
+  return comments.docs??[]
+},[postId],{tags:[postId]})
 
-  if (!post) return <PayloadRedirects url={url} />
+function makeTree(comnts:PostComment[]){
+  const res:any[]=comnts.filter(it=>!it.replyId).map((it:any)=>{
+    it.children=[]
+    return it
+  })
+    function dfs(arr:any[]){
+      for(let it of arr){
+        it.children=comnts.filter(a=>it.id===a.replyId)
+        dfs(it.children)
+      }
+    }
+    dfs(res)
+  return res
+}
 
+export default async function Post({ params }:any) {
+  //const url = '/posts/' + slug
+  const {user}=await getMeUser();
+  console.log(user)
+  const {slug}=await params
+  const post = await queryPostBySlug({ slug })()
+
+  if (!post) return <div>Not Found</div>
+
+  const comments=makeTree(await loadComments(post.id)())
+  
   return (
     <article className="pt-16 pb-16">
-      <PageClient />
-
-      {/* Allows redirects for valid pages too */}
-      <PayloadRedirects disableNotFound url={url} />
-
       <PostHero post={post} />
 
       <div className="flex flex-col items-center gap-4 pt-8">
-        <div className="container lg:mx-0 lg:grid lg:grid-cols-[1fr_48rem_1fr] grid-rows-[1fr]">
+        <div className="container">
           <RichText
-            className="lg:grid lg:grid-cols-subgrid col-start-1 col-span-3 grid-rows-[1fr]"
+            className=""
             content={post.content}
             enableGutter={false}
           />
         </div>
-
-        {post.relatedPosts && post.relatedPosts.length > 0 && (
-          <RelatedPosts
-            className="mt-12"
-            docs={post.relatedPosts.filter((post) => typeof post === 'object')}
-          />
-        )}
       </div>
+       <div className='container mt-8'>
+        <div>{comments.length} Comments</div>
+        <AddComment user={user}  postId={post.id} addComment={addComment} />
+        {comments.map(it=><Comment user={user} key={it.id} item={it} addComment={addComment} onUpdate={updateComment} onDelete={deleteComment}/>)}
+      </div> 
     </article>
   )
 }
 
-export async function generateMetadata({
-  params: { slug },
-}: {
-  params: { slug: string }
-}): Promise<Metadata> {
-  const post = await queryPostBySlug({ slug })
 
-  return generateMeta({ doc: post })
-}
 
-const queryPostBySlug = cache(async ({ slug }: { slug: string }) => {
-  const { isEnabled: draft } = draftMode()
+const queryPostBySlug =({ slug }: { slug: string })=> unstable_cache(async () => {
+  const { isEnabled: draft } = await draftMode()
 
   const payload = await getPayloadHMR({ config: configPromise })
 
@@ -89,4 +133,4 @@ const queryPostBySlug = cache(async ({ slug }: { slug: string }) => {
   })
 
   return result.docs?.[0] || null
-})
+},[slug],{tags:[`post-${slug}`]})

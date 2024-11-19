@@ -9,13 +9,16 @@ import type { Header } from '@/payload-types'
 import { Logo } from '@/components/Logo/Logo'
 import { HeaderNav } from './Nav'
 import { Media } from '@/components/Media'
+import {setState} from '@/appState'
 
 interface HeaderClientProps {
   header: Header
 }
 
 export const HeaderClient: React.FC<HeaderClientProps> = ({ header }) => {
-
+  useEffect(()=>{
+    setState({toggleWindow:false})
+  })
   return (
     <header
       className="container relative z-20 py-8 flex justify-between"

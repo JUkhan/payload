@@ -17,6 +17,7 @@ import { MediaBlock } from '../../blocks/MediaBlock/config'
 import {HtmlBlock} from '@/blocks/HtmlBlock/config'
 import { MarkdownBlock } from '../MarkdownBlock/config'
 
+
 export const DocContent: Block = {
   slug: 'doc',
   interfaceName: 'DocContent',
@@ -26,14 +27,7 @@ export const DocContent: Block = {
       type: 'richText',
       editor: lexicalEditor({
         features: ({ rootFeatures }) => {
-          return [
-            ...rootFeatures,
-            HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-            BlocksFeature({ blocks: [Banner, Code, MediaBlock, HtmlBlock, MarkdownBlock] }),
-            FixedToolbarFeature(),
-            InlineToolbarFeature(),
-            HorizontalRuleFeature(),
-          ]
+          return [...rootFeatures, BlocksFeature({ blocks: [MediaBlock, HtmlBlock, MarkdownBlock] }),]
         },
       }),
       label: false,
@@ -60,14 +54,7 @@ export const DocContentWithTitle: Block = {
       type: 'richText',
       editor: lexicalEditor({
         features: ({ rootFeatures }) => {
-          return [
-            ...rootFeatures,
-            HeadingFeature({ enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'] }),
-            BlocksFeature({ blocks: [Banner, Code, MediaBlock, HtmlBlock, MarkdownBlock] }),
-            FixedToolbarFeature(),
-            InlineToolbarFeature(),
-            HorizontalRuleFeature(),
-          ]
+          return [...rootFeatures, BlocksFeature({ blocks: [MediaBlock, HtmlBlock, MarkdownBlock] }),]
         },
       }),
       label: false,
@@ -134,16 +121,7 @@ export const SubMenuBlock: Block = {
                           type: 'richText',
                           editor: lexicalEditor({
                             features: ({ rootFeatures }) => {
-                              return [
-                                ...rootFeatures,
-                                HeadingFeature({
-                                  enabledHeadingSizes: ['h1', 'h2', 'h3', 'h4'],
-                                }),
-                                BlocksFeature({ blocks: [Banner, Code, MediaBlock, HtmlBlock, MarkdownBlock] }),
-                                FixedToolbarFeature(),
-                                InlineToolbarFeature(),
-                                HorizontalRuleFeature(),
-                              ]
+                              return [...rootFeatures, BlocksFeature({ blocks: [MediaBlock, HtmlBlock, MarkdownBlock] }),]
                             },
                           }),
                           label: false,

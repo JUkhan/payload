@@ -1,7 +1,8 @@
-'use client'
-import React from 'react'
-import RichText from '@/components/RichText'
-import { cn } from '@/utilities/cn'
+"use client";
+import React, { useEffect, useState } from "react";
+import RichText from "@/components/RichText";
+import { cn } from "@/utilities/cn";
+import { Loader2 } from "lucide-react";
 type Menu = {
   title: string;
   content?: any;
@@ -11,14 +12,11 @@ type Menu = {
   active?:string;
   directContent: boolean;
 };
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 
-import {
-  Card,
-  CardContent,
- 
-} from '@/components/ui/card'
-import SearchComponent from './search.client'
+import { Card, CardContent } from "@/components/ui/card";
+import SearchComponent from "./search.client";
 import Link from "next/link";
 
 const MenuItem: React.FC<{

@@ -1,16 +1,17 @@
-import type { CollectionConfig } from "payload";
+import type { CollectionConfig } from 'payload'
 
-import { isSuperAdmin } from "../access/isSuperAdmin";
-import { currentUserOrSuperAdmin } from "../access/currentUserOrSuperAdmin";
+import { anyone } from '../access/anyone'
+import { authenticated } from '../access/authenticated'
 
-export const PostComments: CollectionConfig = {
-  slug: "post-comments",
+const PostComments: CollectionConfig = {
+  slug: 'post-comments',
   access: {
-    create: () => true,
-    read: () => true,
-    delete: isSuperAdmin,
-    update: currentUserOrSuperAdmin,
+    create: authenticated,
+    delete: authenticated,
+    read: anyone,
+    update: authenticated,
   },
+  
   fields: [
     {
         name:'postId',
@@ -40,4 +41,6 @@ export const PostComments: CollectionConfig = {
         required:false
     },
   ],
-};
+}
+
+export default PostComments
