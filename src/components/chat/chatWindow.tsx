@@ -26,7 +26,7 @@ import GroupChatComponent from "./group";
 import { ChatGroup } from "@/payload-types";
 import { KeyValuePair } from "tailwindcss/types/config";
 import { toast } from "sonner";
-import {setState, useSelector} from '@/appState'
+import {setState, useSelector, select} from '@/appState'
 import useWebSocketConnectionHook from "./useWebSocketConnectionHook";
 import {formatDistanceToNowStrict} from 'date-fns/formatDistanceToNowStrict'
 
@@ -62,15 +62,15 @@ const ChatWindow = () => {
         setState(pre=>{
           if (!pre.groups?.find((it) => it.groupName === data.groupName)) {
             if (data.users.find((it: any) => it.userId === pre.loggedInUser?.email)) {
-              const list =pre.groups.slice();
-              list.unshift(data);
+              const groups =select(state=>state.groups);
+              groups.unshift(data);
               if(data.creatorId===pre.loggedInUser?.email){
                 setSelectedGroup(data);
               }else{
                 io.current?.disconnect()
                 io.current?.connect();
               }
-              return {...pre, groups:list}
+              return {groups}
             }
           }
           return pre;
@@ -79,16 +79,17 @@ const ChatWindow = () => {
     }
   });
   const [message, setMessage] = useState("");
-  const [height, setHeight] = useState(window.innerHeight - 180);
+  const [height, setHeight] = useState(0);
   const [isPrivate, setPrivate] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any);
   
   useEffect(() => {
+    setHeight(window.innerHeight - 180)
     const handleSize = () => {
       setHeight((_) => window.innerHeight - 180);
     };
-    document.addEventListener("resize", handleSize);
-    return () => document.removeEventListener("resize", handleSize);
+    window.addEventListener("resize", handleSize);
+    return () => window.removeEventListener("resize", handleSize);
   }, []);
   const sendMessage = () => {
     
