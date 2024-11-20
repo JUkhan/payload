@@ -28,6 +28,7 @@ import { KeyValuePair } from "tailwindcss/types/config";
 import { toast } from "sonner";
 import {setState, useSelector} from '@/appState'
 import useWebSocketConnectionHook from "./useWebSocketConnectionHook";
+import {formatDistanceToNowStrict} from 'date-fns/formatDistanceToNowStrict'
 
 const ChatWindow = () => {
   const [msgObj, setMsgObj] = useState<KeyValuePair<string, any[]>>({});
@@ -58,15 +59,12 @@ const ChatWindow = () => {
         break;
 
       case "join":
-        console.log("joining data", data);
-        
         setState(pre=>{
-          console.log(pre)
           if (!pre.groups?.find((it) => it.groupName === data.groupName)) {
-            if (data.users.find((it: any) => it.userId === loggedInUser?.email)) {
+            if (data.users.find((it: any) => it.userId === pre.loggedInUser?.email)) {
               const list =pre.groups.slice();
               list.unshift(data);
-              if(data.creatorId===loggedInUser?.email){
+              if(data.creatorId===pre.loggedInUser?.email){
                 setSelectedGroup(data);
               }else{
                 io.current?.disconnect()
@@ -81,16 +79,16 @@ const ChatWindow = () => {
     }
   });
   const [message, setMessage] = useState("");
-  const [height, setHeight] = useState(globalThis.innerHeight - 80);
+  const [height, setHeight] = useState(window.innerHeight - 180);
   const [isPrivate, setPrivate] = useState(0);
   const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any);
   
   useEffect(() => {
     const handleSize = () => {
-      setHeight((_) => globalThis.innerHeight - 80);
+      setHeight((_) => window.innerHeight - 180);
     };
-    globalThis.addEventListener("resize", handleSize);
-    return () => globalThis.removeEventListener("resize", handleSize);
+    document.addEventListener("resize", handleSize);
+    return () => document.removeEventListener("resize", handleSize);
   }, []);
   const sendMessage = () => {
     
@@ -191,8 +189,7 @@ const ChatWindow = () => {
                       <div className="text-xs">
                         {m.userName}{" "}
                         <i className="text-slate-500">
-                          {new Date(m.createdAt).toLocaleDateString()}{" "}
-                          {new Date(m.createdAt).toLocaleTimeString()}
+                          {formatDistanceToNowStrict(new Date(m.createdAt),{addSuffix:true})}
                         </i>
                       </div>
                       <div

@@ -7,7 +7,7 @@ const useWebSocketConnectionHook = (
   cb: (arg: unknown) => void,
   event: string
 ) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
   const socketRef = useRef<Socket>(null);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
