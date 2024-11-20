@@ -1,4 +1,8 @@
 import { withPayload } from '@payloadcms/next/withPayload'
+import { createMDX } from "fumadocs-mdx/next";
+
+const withMDX = createMDX();
+
 
 import redirects from './redirects.js'
 
@@ -22,4 +26,4 @@ const nextConfig = {
   redirects,
 }
 
-export default withPayload(nextConfig)
+export default withPayload(withMDX(nextConfig))

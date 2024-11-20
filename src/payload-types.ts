@@ -25,6 +25,7 @@ export interface Config {
     'post-comments': PostComment;
     'chat-group': ChatGroup;
     'chat-message': ChatMessage;
+    documentation: Documentation;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -1062,6 +1063,31 @@ export interface ChatMessage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "documentation".
+ */
+export interface Documentation {
+  id: string;
+  fileName: string;
+  isFolder?: boolean | null;
+  folderName?: string | null;
+  parent?: (string | null) | Documentation;
+  content: MDXBlock[];
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MDXBlock".
+ */
+export interface MDXBlock {
+  mdx: string;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mdx';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1190,6 +1216,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'chat-message';
         value: string | ChatMessage;
+      } | null)
+    | ({
+        relationTo: 'documentation';
+        value: string | Documentation;
       } | null)
     | ({
         relationTo: 'redirects';

@@ -45,6 +45,7 @@ import ProductInquery from './collections/ProductInquery'
 import Clients from './collections/Clients'
 import PostComments from './collections/PostComments'
 import { ChatGroup, ChatMessage } from './collections/ChatGroup'
+import { Documentation } from './collections/Documentation'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -162,7 +163,8 @@ export default buildConfig({
     Manuals,
     PostComments,
     ChatGroup,
-    ChatMessage
+    ChatMessage,
+    Documentation
   ],
   cors: [process.env.PAYLOAD_PUBLIC_SERVER_URL || ''].filter(Boolean),
   csrf: [process.env.PAYLOAD_PUBLIC_SERVER_URL || ''].filter(Boolean),
