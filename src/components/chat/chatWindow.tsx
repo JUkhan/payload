@@ -1,118 +1,117 @@
-"use client";
+'use client'
 
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import React, { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 //import { useUser, UserContextType } from "@/providers/user-provider";
-import { Input } from "@/components/ui/input";
-import { Plus, CirclePlus } from "lucide-react";
-import { cn } from "@/utilities/cn";
-import MarkdownView from "react-showdown";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Input } from '@/components/ui/input'
+import { Plus, CirclePlus } from 'lucide-react'
+import { cn } from '@/utilities/cn'
+import MarkdownView from 'react-showdown'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separetor";
-import GroupChatComponent from "./group";
-import { ChatGroup } from "@/payload-types";
-import { KeyValuePair } from "tailwindcss/types/config";
-import { toast } from "sonner";
-import {setState, useSelector, select} from '@/appState'
-import useWebSocketConnectionHook from "./useWebSocketConnectionHook";
-import {formatDistanceToNowStrict} from 'date-fns/formatDistanceToNowStrict'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separetor'
+import GroupChatComponent from './group'
+import { ChatGroup } from '@/payload-types'
+import { KeyValuePair } from 'tailwindcss/types/config'
+import { toast } from 'sonner'
+import { setState, useSelector, select } from '@/appState'
+import useWebSocketConnectionHook from './useWebSocketConnectionHook'
+import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict'
 
 const ChatWindow = () => {
-  const [msgObj, setMsgObj] = useState<KeyValuePair<string, any[]>>({});
-  const {loggedInUser, toggleWindow, groups, getMessages} = useSelector(s=>s);
- 
+  const [msgObj, setMsgObj] = useState<KeyValuePair<string, any[]>>({})
+  const { loggedInUser, toggleWindow, groups, getMessages } = useSelector((s) => s)
+
   const io = useWebSocketConnectionHook((listenningOn: string, data: any) => {
     switch (listenningOn) {
-      case "group":
+      case 'group':
         setMsgObj((pre) => {
           if (pre[data.groupName] && pre[data.groupName].length > 0) {
-            const createdAt =
-              pre[data.groupName][pre[data.groupName].length - 1].createdAt;
+            const createdAt = pre[data.groupName][pre[data.groupName].length - 1].createdAt
 
             if (createdAt === data.createdAt) {
-              return pre;
+              return pre
             }
           }
-          const newObj = Object.assign({}, pre);
+          const newObj = Object.assign({}, pre)
 
           if (newObj[data.groupName]) {
-            newObj[data.groupName] = [...newObj[data.groupName], data];
+            newObj[data.groupName] = [...newObj[data.groupName], data]
           } else {
-            newObj[data.groupName] = [data];
+            newObj[data.groupName] = [data]
           }
-          return newObj;
-        });
+          return newObj
+        })
         toast.info(data.message)
-        break;
+        scrollToView()
+        break
 
-      case "join":
-        setState(pre=>{
+      case 'join':
+        setState((pre) => {
           if (!pre.groups?.find((it) => it.groupName === data.groupName)) {
             if (data.users.find((it: any) => it.userId === pre.loggedInUser?.email)) {
-              const groups =select(state=>state.groups);
-              groups.unshift(data);
-              if(data.creatorId===pre.loggedInUser?.email){
-                setSelectedGroup(data);
-              }else{
+              const groups = select((state) => state.groups)
+              groups.unshift(data)
+              if (data.creatorId === pre.loggedInUser?.email) {
+                setSelectedGroup(data)
+              } else {
                 io.current?.disconnect()
-                io.current?.connect();
+                io.current?.connect()
               }
-              return {groups}
+              return { groups }
             }
           }
-          return pre;
+          return pre
         })
-        break;
+        break
     }
-  });
-  const [message, setMessage] = useState("");
-  const [height, setHeight] = useState(0);
-  const [isPrivate, setPrivate] = useState(0);
-  const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any);
-  
+  })
+  const [message, setMessage] = useState('')
+  const [height, setHeight] = useState(0)
+  const [isPrivate, setPrivate] = useState(0)
+  const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any)
+  const scrollElmRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
-    setHeight(window.innerHeight - 180)
+    if (scrollElmRef.current) {
+      scrollElmRef.current.scrollIntoView()
+    }
+    setHeight(window.innerHeight - 255)
     const handleSize = () => {
-      setHeight((_) => window.innerHeight - 180);
-    };
-    window.addEventListener("resize", handleSize);
-    return () => window.removeEventListener("resize", handleSize);
-  }, []);
-  const sendMessage = () => {
-    
-    io.current?.emit(
-      selectedGroup.groupName === "All Users" ? "all" : "group",
-      {
-        groupId: selectedGroup.id,
-        groupName: selectedGroup.groupName,
-        userName: `${loggedInUser?.name}`,
-        message,
+      setHeight((_) => window.innerHeight - 255)
+    }
+    window.addEventListener('resize', handleSize)
+    return () => window.removeEventListener('resize', handleSize)
+  }, [])
+  const scrollToView = (delay: number = 100) => {
+    setTimeout(() => {
+      if (scrollElmRef.current) {
+        scrollElmRef.current.scrollTop = scrollElmRef.current.scrollHeight
       }
-    );
-    setMessage("");
-  };
-  const userName = `${loggedInUser?.name}`;
-  const getPrivateName=(groupName:string)=>{
-    return groupName.replace(userName,'').replace(',','')
+    }, delay)
+  }
+  const sendMessage = () => {
+    io.current?.emit(selectedGroup.groupName === 'All Users' ? 'all' : 'group', {
+      groupId: selectedGroup.id,
+      groupName: selectedGroup.groupName,
+      userName: `${loggedInUser?.name}`,
+      message,
+    })
+    setMessage('')
+  }
+  const userName = `${loggedInUser?.name}`
+  const getPrivateName = (groupName: string) => {
+    return groupName.replace(userName, '').replace(',', '')
   }
   return (
     <TooltipProvider>
-      <div style={{ height: toggleWindow ? height : 0 }}>
+      <div style={{ height: toggleWindow ? height : 0 }} className="ml-2 mr-2 mb-2">
         <ResizablePanelGroup direction="horizontal" className="rounded border">
-          <ResizablePanel defaultSize={25}>
+          <ResizablePanel defaultSize={25} className="bg-gray-50">
             <div className="h-12 border-b">
               <div className="flex items-center justify-between">
                 <span className="font-semibold pt-3 pl-4">Chat</span>
@@ -148,18 +147,18 @@ const ChatWindow = () => {
                   key={group.id}
                   onClick={async () => {
                     if (!msgObj[group.groupName] && getMessages) {
-                      const data = await getMessages(group.id);
-                      console.log(data);
-                      setMsgObj((pre) => ({ ...pre, [group.groupName]: data }));
+                      const data = await getMessages(group.id)
+                      setMsgObj((pre) => ({ ...pre, [group.groupName]: data }))
+                      scrollToView(500)
+                      if(inputRef.current)inputRef.current.focus()
                     }
-                    setSelectedGroup(group);
+                    setSelectedGroup(group)
                   }}
-                  className={cn(
-                    "p-2 cursor-pointer pl-4 font-semibold hover:bg-purple-100",
-                    { "bg-purple-200": group.id === selectedGroup.id }
-                  )}
+                  className={cn('p-2 cursor-pointer pl-4 font-semibold hover:bg-purple-100', {
+                    'bg-purple-200': group.id === selectedGroup.id,
+                  })}
                 >
-                  <span>{group.isPrivate?getPrivateName(group.groupName): group.groupName}</span>
+                  <span>{group.isPrivate ? getPrivateName(group.groupName) : group.groupName}</span>
                 </div>
               ))}
             </ScrollArea>
@@ -168,7 +167,11 @@ const ChatWindow = () => {
           <ResizablePanel className="bg-white" defaultSize={75}>
             <div className="flex items-center pl-4 h-12 border-b">
               {isPrivate === 0 ? (
-                <span>{selectedGroup.isPrivate?getPrivateName(selectedGroup?.groupName): selectedGroup?.groupName}</span>
+                <span>
+                  {selectedGroup.isPrivate
+                    ? getPrivateName(selectedGroup?.groupName)
+                    : selectedGroup?.groupName}
+                </span>
               ) : (
                 <GroupChatComponent
                   isPrivate={isPrivate === 1}
@@ -177,26 +180,25 @@ const ChatWindow = () => {
                 />
               )}
             </div>
-            <ScrollArea style={{ height: height - 120 }} className="">
+            <ScrollArea ref={scrollElmRef} style={{ height: height - 95 }}>
               <div className="m-2 ml-24 mr-24">
                 {msgObj[selectedGroup.groupName]?.map((m) => (
                   <div key={m.id}>
                     <div
                       className={cn({
-                        "flex flex-col items-end justify-end":
-                          m.userName === userName,
+                        'flex flex-col items-end justify-end': m.userName === userName,
                       })}
                     >
                       <div className="text-xs">
-                        {m.userName}{" "}
+                        {m.userName}{' '}
                         <i className="text-slate-500">
-                          {formatDistanceToNowStrict(new Date(m.createdAt),{addSuffix:true})}
+                          {formatDistanceToNowStrict(new Date(m.createdAt), { addSuffix: true })}
                         </i>
                       </div>
                       <div
                         className={cn(
-                          "bg-rose-100 p-2 pl-3 pr-3 rounded mt-1 mb-4 inline-block max-w-[800px]",
-                          { "bg-slate-200": m.userName === userName }
+                          'bg-rose-100 p-2 pl-3 pr-3 rounded mt-1 mb-4 inline-block max-w-[800px]',
+                          { 'bg-slate-200': m.userName === userName },
                         )}
                       >
                         <MarkdownView
@@ -211,12 +213,18 @@ const ChatWindow = () => {
             </ScrollArea>
 
             <div className="flex items-center justify-center">
-              <Textarea
+              <Input
+                ref={inputRef}
                 className="inline-block md:w-[800px] lg:w-[1000px]"
                 value={message}
                 placeholder="Type a message"
-                onChange={(ev) => setMessage(ev.target.value)}
-              ></Textarea>
+                onKeyUp={(ev)=>{
+                  if (ev.key === 'Enter') {
+                    sendMessage();
+                  }
+                }}
+                onChange={ev => setMessage(ev.target.value)}
+              ></Input>
               <Button
                 disabled={!!!(selectedGroup?.id && message && loggedInUser)}
                 className="primary"
@@ -229,7 +237,7 @@ const ChatWindow = () => {
         </ResizablePanelGroup>
       </div>
     </TooltipProvider>
-  );
-};
+  )
+}
 
-export default ChatWindow;
+export default ChatWindow

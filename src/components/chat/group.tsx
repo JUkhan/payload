@@ -62,7 +62,7 @@ const GroupChatComponent = ({
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex items-center gap-2">
       {!isPrivate ? (
         <>
           <Input
@@ -72,7 +72,7 @@ const GroupChatComponent = ({
             onChange={(ev) => setGroup(ev.target.value)}
           />
           <MultiSelect
-            className="w-[450px]"
+            className="min-w-[150px]"
             options={users ?? []}
             onValueChange={setSelectedUsers}
             placeholder="Select Users"
@@ -98,8 +98,8 @@ const GroupChatComponent = ({
       >
         Submit
       </Button>
-      <Button size="sm" variant="link" onClick={() => setPrivate(0)}>
-        Cancel
+      <Button size="sm" variant="outline" onClick={() => setPrivate(0)}>
+        X
       </Button>
     </div>
   );

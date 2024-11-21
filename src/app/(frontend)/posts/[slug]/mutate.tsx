@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react'
+import { Button } from '@/components/ui/button'
 //import { useUser } from "@/providers/user-provider";
-import type { PostComment, User } from "@/payload-types";
-import { EllipsisVertical } from "lucide-react";
+import type { PostComment, User } from '@/payload-types'
+import { EllipsisVertical } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,27 +13,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import UpdateComment from "./update";
+} from '@/components/ui/alert-dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import UpdateComment from './update'
 type props = {
-  item: PostComment;
-  onUpdate: any;
-  onDelete: any;
-  user:User
-};
+  item: PostComment
+  onUpdate: any
+  onDelete: any
+  user: User
+}
 const Mutate = ({ item, onUpdate, onDelete, user }: props) => {
   //const { user } = useUser();
-  const [open, setOPen] = useState(false);
-  const [update, setUpdate] = useState(false);
-  if (!(user && user.id === item.userId)) return null;
+  const [open, setOPen] = useState(false)
+  const [update, setUpdate] = useState(false)
+  if (!(user && user.id === item.userId)) return null
   return (
-    <div>
-      <div className="flex flex-row-reverse">
+    <div className="grid grid-flow-col">
+
+      <div className="col-span-11">
+        <div className="">
+          {update ? (
+            <UpdateComment item={item} onUpdate={onUpdate} cb={() => setUpdate(false)} />
+          ) : (
+            <div className="text-pretty">{item.comment}</div>
+          )}
+        </div>
+      </div>
+      {!update && <div className='flex items-start justify-end'>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon">
@@ -53,39 +59,28 @@ const Mutate = ({ item, onUpdate, onDelete, user }: props) => {
             </div>
           </PopoverContent>
         </Popover>
-      </div>
-      <AlertDialog open={open}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete your comment permanently?
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setOPen((_) => false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setOPen((_) => false);
-                onDelete(item);
-              }}
-            >
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
-      {update && (
-        <UpdateComment
-          item={item}
-          onUpdate={onUpdate}
-          cb={() => setUpdate(false)}
-        />
-      )}
+        <AlertDialog open={open}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete your comment permanently?</AlertDialogTitle>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setOPen((_) => false)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setOPen((_) => false)
+                  onDelete(item)
+                }}
+              >
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>}
     </div>
-  );
-};
+  )
+}
 
-export default Mutate;
+export default Mutate

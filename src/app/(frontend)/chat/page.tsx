@@ -91,6 +91,7 @@ async function getGroupMessages(groupId: string) {
     where: {
       groupId: { equals: groupId },
     },
+    sort: 'createdAt', 
     overrideAccess: true,
   })
 
