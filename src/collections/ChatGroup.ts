@@ -79,3 +79,29 @@ export const ChatMessage: CollectionConfig = {
     },
   ],
 };
+
+export const ChatUnreadStatus: CollectionConfig = {
+  slug: "chat-unread-status",
+  access: {
+    create: authenticated,
+    delete: authenticated,
+    read: anyone,
+    update: authenticated,
+  },
+  admin: {
+    useAsTitle: "userId",
+  },
+  fields: [
+    {
+      name: "userId",
+      type: "text",
+      required: true,
+    },
+    {
+      name: "grrupName",
+      type: "text",
+      required: true,
+    },
+    
+  ],
+};

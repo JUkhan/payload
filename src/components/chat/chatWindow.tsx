@@ -87,7 +87,7 @@ const ChatWindow = () => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    setState({ unreadStatus: getUnreadStatus() })
+    //setState({ unreadStatus: getUnreadStatus() })
     if (scrollElmRef.current) {
       scrollElmRef.current.scrollIntoView()
     }

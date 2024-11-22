@@ -31,7 +31,10 @@ export function getUnreadStatus():Record<string, number>{
 export function setUnreadStatus(groupName:string, value: number){
     const unreadStatus=select(s=>s.unreadStatus)
     unreadStatus[groupName]=value
-    console.log(unreadStatus)
     setState({unreadStatus})
     localStorage.setItem(KEY, JSON.stringify(unreadStatus))
+}
+
+export function saveToLocal(status:Record<string, number>){
+  localStorage.setItem(KEY, JSON.stringify(status))
 }

@@ -16,7 +16,7 @@ async function allUsers() {
 
   const result = await payload.find({
     collection: 'users',
-    limit: 1000,
+    limit: 0,
     overrideAccess: true,
   })
 
@@ -26,6 +26,33 @@ async function allUsers() {
     label: it.name,
   }))
 }
+
+async function getUnreadStatus(userId:string) {
+  
+  const payload = await getPayloadHMR({ config: configPromise })
+
+  const result = await payload.find({
+    collection: 'chat-unread-status',
+    limit: 0,
+    where:{userId:{equals:userId}},
+    overrideAccess: true,
+  })
+  await payload.delete({
+    collection: 'chat-unread-status',
+    where:{userId:{equals:userId}},
+    overrideAccess: true,
+  })
+
+  return result.docs.reduce((obj, it) =>{
+    if(obj[it.grrupName]){
+      obj[it.grrupName]++
+    }else{
+      obj[it.grrupName]=1
+    }
+    return obj
+  },{} as Record<string,number>)
+}
+
 
 async function createGroup(group: any): Promise<[string | null, ChatGroup | null]> {
   'use server'
@@ -53,7 +80,9 @@ const ChatPage = async () => {
   const users = await allUsers()
   const groups = await getChatGroups()
   const {user}= await getMeUser()
-  console.log(user)
+  const unreadStatus= await getUnreadStatus(user.email)
+  console.log(user.email, unreadStatus)
+  
   return (
     <Starter
       loggedInUser={user}
@@ -61,6 +90,7 @@ const ChatPage = async () => {
       groups={groups}
       getMessages={getGroupMessages}
       createGroup={createGroup}
+      unreadStatus={unreadStatus}
     />
   )
 }

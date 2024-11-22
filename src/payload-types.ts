@@ -26,6 +26,7 @@ export interface Config {
     'chat-group': ChatGroup;
     'chat-message': ChatMessage;
     documentation: Documentation;
+    'chat-unread-status': ChatUnreadStatus;
     redirects: Redirect;
     forms: Form;
     'form-submissions': FormSubmission;
@@ -1088,6 +1089,17 @@ export interface MDXBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "chat-unread-status".
+ */
+export interface ChatUnreadStatus {
+  id: string;
+  userId: string;
+  grrupName: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "redirects".
  */
 export interface Redirect {
@@ -1220,6 +1232,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'documentation';
         value: string | Documentation;
+      } | null)
+    | ({
+        relationTo: 'chat-unread-status';
+        value: string | ChatUnreadStatus;
       } | null)
     | ({
         relationTo: 'redirects';

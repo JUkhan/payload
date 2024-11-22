@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 //import { getValidSession } from "@/lib/session";
 import { getPayloadHMR } from '@payloadcms/next/utilities'
 import configPromise from '@payload-config'
+import { ChatUnreadStatus } from '@/payload-types'
 
 const PORT = process.env.SOCKET_PORT || 4000
 let activeUsers = new Map<string, string>()
@@ -43,10 +44,10 @@ export function GET(_req: NextApiRequest) {
     console.log('socket connect', socket.id)
 
     //socket.broadcast.emit("welcome", `Welcome ${socket.id}`)
-    socket.on('activeUser', (currentUser, users) => { 
-      console.log(currentUser,'------')
+    socket.on('activeUser', (currentUser, users) => {
+      console.log(currentUser, '------')
       activeUsers.set(socket.id, currentUser.email)
-      console.log('connected',socket.id, activeUsers.get(socket.id))
+      console.log('connected', socket.id, activeUsers.get(socket.id))
       userList = users
     })
 
@@ -89,16 +90,19 @@ async function createMessage(data: any) {
 
 function sendEmail(data: any) {
   console.log('Sending email')
-  let offlineUsers: any[] = []
+  let offLineUsers: any[] = []
   const onlineUsers = new Map<string, string>()
-  activeUsers.forEach((val)=>onlineUsers.set(val,val))
-  console.log(onlineUsers)
+  activeUsers.forEach((val) => onlineUsers.set(val, val))
   if (data.groupName === 'All Users') {
-    offlineUsers = userList.filter((it) => !onlineUsers.has(it.email))
+    offLineUsers = userList.filter((it) => !onlineUsers.has(it.email))
   } else {
-    offlineUsers = data.groupUsers.filter((it) => !onlineUsers.has(it.userId))
+    offLineUsers = data.groupUsers.filter((it) => !onlineUsers.has(it.userId))
   }
-  console.log(offlineUsers)
+  console.log(offLineUsers)
+  const all = offLineUsers.map((it) =>
+    addUnreadStatus({ userId: it.userId || it.value, grrupName: data.groupName }),
+  )
+  Promise.all(all)
 }
 
 async function allGroups() {
@@ -110,4 +114,10 @@ async function allGroups() {
     overrideAccess: true,
   })
   return (result.docs || []).filter((it) => it.groupName !== 'All Users').map((it) => it.groupName)
+}
+
+function addUnreadStatus(data: any) {
+  return getPayloadHMR({ config: configPromise }).then((it) =>
+    it.create({ collection: 'chat-unread-status', data }),
+  )
 }

@@ -44,7 +44,7 @@ import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import ProductInquery from './collections/ProductInquery'
 import Clients from './collections/Clients'
 import PostComments from './collections/PostComments'
-import { ChatGroup, ChatMessage } from './collections/ChatGroup'
+import { ChatGroup, ChatMessage, ChatUnreadStatus } from './collections/ChatGroup'
 import { Documentation } from './collections/Documentation'
 
 const filename = fileURLToPath(import.meta.url)
@@ -164,7 +164,8 @@ export default buildConfig({
     PostComments,
     ChatGroup,
     ChatMessage,
-    Documentation
+    Documentation,
+    ChatUnreadStatus,
   ],
   cors: [process.env.PAYLOAD_PUBLIC_SERVER_URL || ''].filter(Boolean),
   csrf: [process.env.PAYLOAD_PUBLIC_SERVER_URL || ''].filter(Boolean),
