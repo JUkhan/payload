@@ -17,13 +17,15 @@ import GroupChatComponent from './group'
 import { ChatGroup } from '@/payload-types'
 import { KeyValuePair } from 'tailwindcss/types/config'
 import { toast } from 'sonner'
-import { setState, useSelector, select } from '@/appState'
+import { setState, useSelector, select, getUnreadStatus, setUnreadStatus, getState } from './state'
 import useWebSocketConnectionHook from './useWebSocketConnectionHook'
 import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict'
+import { Badge } from '@/components/ui/badge'
 
 const ChatWindow = () => {
   const [msgObj, setMsgObj] = useState<KeyValuePair<string, any[]>>({})
-  const { loggedInUser, toggleWindow, groups, getMessages } = useSelector((s) => s)
+  const { loggedInUser, toggleWindow, groups, getMessages, unreadStatus, selectedGroup, users } =
+    useSelector((s) => s)
 
   const io = useWebSocketConnectionHook((listenningOn: string, data: any) => {
     switch (listenningOn) {
@@ -43,10 +45,17 @@ const ChatWindow = () => {
           } else {
             newObj[data.groupName] = [data]
           }
+          console.log(newObj)
           return newObj
         })
-        toast.info(data.message)
+        //toast.info(data.message)
         scrollToView()
+        const { selectedGroup, unreadStatus } = getState()
+
+        if (selectedGroup.groupName !== data.groupName) {
+          const st = unreadStatus[data.groupName] || 0
+          setUnreadStatus(data.groupName, st + 1)
+        }
         break
 
       case 'join':
@@ -55,13 +64,14 @@ const ChatWindow = () => {
             if (data.users.find((it: any) => it.userId === pre.loggedInUser?.email)) {
               const groups = select((state) => state.groups)
               groups.unshift(data)
+              let sg = selectedGroup
               if (data.creatorId === pre.loggedInUser?.email) {
-                setSelectedGroup(data)
+                sg = data
               } else {
                 io.current?.disconnect()
                 io.current?.connect()
               }
-              return { groups }
+              return { groups, selectedGroup: sg }
             }
           }
           return pre
@@ -72,11 +82,12 @@ const ChatWindow = () => {
   const [message, setMessage] = useState('')
   const [height, setHeight] = useState(0)
   const [isPrivate, setPrivate] = useState(0)
-  const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any)
+  //const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any)
   const scrollElmRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    setState({ unreadStatus: getUnreadStatus() })
     if (scrollElmRef.current) {
       scrollElmRef.current.scrollIntoView()
     }
@@ -85,8 +96,13 @@ const ChatWindow = () => {
       setHeight((_) => window.innerHeight - 255)
     }
     window.addEventListener('resize', handleSize)
+    console.log('activeuser',io, loggedInUser, users)
+    if(loggedInUser){
+      console.log('---------', loggedInUser)
+    io.current?.emit('activeUser', loggedInUser, users)
+    }
     return () => window.removeEventListener('resize', handleSize)
-  }, [])
+  }, [loggedInUser, users, io])
   const scrollToView = (delay: number = 100) => {
     setTimeout(() => {
       if (scrollElmRef.current) {
@@ -99,6 +115,7 @@ const ChatWindow = () => {
       groupId: selectedGroup.id,
       groupName: selectedGroup.groupName,
       userName: `${loggedInUser?.name}`,
+      groupUsers:selectedGroup.users,
       message,
     })
     setMessage('')
@@ -150,15 +167,21 @@ const ChatWindow = () => {
                       const data = await getMessages(group.id)
                       setMsgObj((pre) => ({ ...pre, [group.groupName]: data }))
                       scrollToView(500)
-                      if(inputRef.current)inputRef.current.focus()
+                      if (inputRef.current) inputRef.current.focus()
                     }
-                    setSelectedGroup(group)
+                    setState({ selectedGroup: group })
+                    setUnreadStatus(group.groupName, 0)
                   }}
                   className={cn('p-2 cursor-pointer pl-4 font-semibold hover:bg-purple-100', {
                     'bg-purple-200': group.id === selectedGroup.id,
                   })}
                 >
                   <span>{group.isPrivate ? getPrivateName(group.groupName) : group.groupName}</span>
+                  {unreadStatus[group.groupName] > 0 && (
+                    <Badge className="ml-2" variant="destructive">
+                      {unreadStatus[group.groupName]}
+                    </Badge>
+                  )}
                 </div>
               ))}
             </ScrollArea>
@@ -180,8 +203,12 @@ const ChatWindow = () => {
                 />
               )}
             </div>
-            <ScrollArea ref={scrollElmRef} style={{ height: height - 95 }}>
-              <div className="m-2 ml-24 mr-24">
+            <div className="flex flex-col items-center">
+              <ScrollArea
+                ref={scrollElmRef}
+                className="md:w-[500px] lg:w-[1000px]"
+                style={{ height: height - 95 }}
+              >
                 {msgObj[selectedGroup.groupName]?.map((m) => (
                   <div key={m.id}>
                     <div
@@ -209,29 +236,29 @@ const ChatWindow = () => {
                     </div>
                   </div>
                 ))}
-              </div>
-            </ScrollArea>
+              </ScrollArea>
 
-            <div className="flex items-center justify-center">
-              <Input
-                ref={inputRef}
-                className="inline-block md:w-[800px] lg:w-[1000px]"
-                value={message}
-                placeholder="Type a message"
-                onKeyUp={(ev)=>{
-                  if (ev.key === 'Enter') {
-                    sendMessage();
-                  }
-                }}
-                onChange={ev => setMessage(ev.target.value)}
-              ></Input>
-              <Button
-                disabled={!!!(selectedGroup?.id && message && loggedInUser)}
-                className="primary"
-                onClick={sendMessage}
-              >
-                Send
-              </Button>
+              <div className="flex items-center justify-center">
+                <Input
+                  ref={inputRef}
+                  className="inline-block sd:w-[400px] md:w-[500px] lg:w-[1000px]"
+                  value={message}
+                  placeholder="Type a message"
+                  onKeyUp={(ev) => {
+                    if (ev.key === 'Enter') {
+                      sendMessage()
+                    }
+                  }}
+                  onChange={(ev) => setMessage(ev.target.value)}
+                ></Input>
+                <Button
+                  disabled={!!!(selectedGroup?.id && message && loggedInUser)}
+                  className="primary"
+                  onClick={sendMessage}
+                >
+                  Send
+                </Button>
+              </div>
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

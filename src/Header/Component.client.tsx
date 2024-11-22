@@ -9,7 +9,7 @@ import type { Header } from '@/payload-types'
 import { Logo } from '@/components/Logo/Logo'
 import { HeaderNav } from './Nav'
 import { Media } from '@/components/Media'
-import {setState} from '@/appState'
+import {setState} from '@/components/chat/state'
 
 interface HeaderClientProps {
   header: Header

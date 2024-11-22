@@ -18,7 +18,7 @@ const AddComment = ({postId, addComment, user}:{postId:string, addComment:any, u
     }
   return (
     <div>
-      <Textarea onClick={()=>setHide(false)} placeholder='Add a comment...' value={comment} onChange={ev=>setComment(_=>ev.target.value)}></Textarea>
+      <Textarea className='block' onClick={()=>setHide(false)} placeholder='Add a comment...' value={comment} onChange={ev=>setComment(_=>ev.target.value)}></Textarea>
       {!hide &&<div className='flex float-end mt-2'>
         <Button  onClick={()=>{setHide(true);setComment(_=>'')}} variant="link">Cancel</Button>
         <Button variant='link' disabled={comment.length===0} onClick={addHandler}>Comment</Button>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import { Socket } from "socket.io-client";
 import { toast } from "sonner";
-import {useSelector} from '@/appState'
+import {useSelector} from './state'
 
 const GroupChatComponent = ({
   isPrivate,

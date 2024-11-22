@@ -31,10 +31,6 @@ const Comment: React.FC<CommentProps> = ({ item, addComment, onUpdate, onDelete,
         <span className='text-slate-900 text-lg font-bold'>{item.userName}</span>
         <i className='text-xs ml-2'> {formatDistanceToNowStrict(new Date(item.createdAt), { addSuffix: true })}</i>
       </div>
-      {/* <div className="flex justify-between">
-        <div className="text-pretty">{item.comment}</div>
-        <Mutate item={item} onUpdate={onUpdate} onDelete={onDelete} user={user} />
-      </div> */}
        <Mutate item={item} onUpdate={onUpdate} onDelete={onDelete} user={user} />
       <div>
         <Button variant="link" onClick={() => setShow((_) => true)}>

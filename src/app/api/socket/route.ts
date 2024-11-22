@@ -1,4 +1,3 @@
-//@ts-nocheck
 import type { NextApiRequest } from 'next'
 import { Server } from 'socket.io'
 import { NextResponse } from 'next/server'
@@ -7,6 +6,8 @@ import { getPayloadHMR } from '@payloadcms/next/utilities'
 import configPromise from '@payload-config'
 
 const PORT = process.env.SOCKET_PORT || 4000
+let activeUsers = new Map<string, string>()
+let userList: any[] = []
 export function GET(_req: NextApiRequest) {
   //@ts-ignore
   if (global.io) {
@@ -35,32 +36,41 @@ export function GET(_req: NextApiRequest) {
     }
   })*/
 
-  io.on('connect', async (socket) => {
-    //const socket = s
+  io.on('connect', async (s) => {
+    const socket = s
     const groups = await allGroups()
-    console.log('_________', groups)
     socket.join(groups)
     console.log('socket connect', socket.id)
+
     //socket.broadcast.emit("welcome", `Welcome ${socket.id}`)
+    socket.on('activeUser', (currentUser, users) => { 
+      console.log(currentUser,'------')
+      activeUsers.set(socket.id, currentUser.email)
+      console.log('connected',socket.id, activeUsers.get(socket.id))
+      userList = users
+    })
 
     socket.on('all', async (data) => {
-      console.log('all:', data)
       const message = (await createMessage(data)) as any
       message.groupName = data.groupName
       io.emit('group', message)
+      sendEmail(data)
     })
     socket.on('group', async (data) => {
       const message = (await createMessage(data)) as any
       message.groupName = data.groupName
       io.to(data.groupName).emit('group', message)
+      sendEmail(data)
     })
     socket.on('join', async (data) => {
-      console.log('joining ', data)
       socket.join(data.groupName)
       io.emit('join', data)
     })
     socket.on('disconnect', async () => {
-      console.log('socket disconnect')
+      console.log('socket disconnect', socket.id)
+      console.log(activeUsers)
+      activeUsers.delete(socket.id)
+      console.log(activeUsers)
     })
   })
   //@ts-ignore
@@ -75,6 +85,20 @@ async function createMessage(data: any) {
     data,
   })
   return message
+}
+
+function sendEmail(data: any) {
+  console.log('Sending email')
+  let offlineUsers: any[] = []
+  const onlineUsers = new Map<string, string>()
+  activeUsers.forEach((val)=>onlineUsers.set(val,val))
+  console.log(onlineUsers)
+  if (data.groupName === 'All Users') {
+    offlineUsers = userList.filter((it) => !onlineUsers.has(it.email))
+  } else {
+    offlineUsers = data.groupUsers.filter((it) => !onlineUsers.has(it.userId))
+  }
+  console.log(offlineUsers)
 }
 
 async function allGroups() {

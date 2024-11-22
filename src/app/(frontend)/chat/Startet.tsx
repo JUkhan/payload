@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { ChatGroup, ChatMessage, User } from "@/payload-types";
-import {setState} from '@/appState'
+import {setState} from '@/components/chat/state'
 
 const Starter = ({ users, groups, getMessages, createGroup, loggedInUser }: { users: any; loggedInUser:User, groups: ChatGroup[], getMessages:(groupId:string)=>Promise<ChatMessage[]>, createGroup:(data:any)=>Promise<[string|null, ChatGroup|null]> }) => {
   
@@ -11,7 +11,6 @@ const Starter = ({ users, groups, getMessages, createGroup, loggedInUser }: { us
     setState({
       loggedInUser,
       toggleWindow: true,
-      unreadMessage: 2,
       getMessages,
       createGroup,
       users,

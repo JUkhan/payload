@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 //import { useUser } from "@/providers/user-provider";
 import type { PostComment, User } from '@/payload-types'
@@ -26,7 +26,8 @@ const Mutate = ({ item, onUpdate, onDelete, user }: props) => {
   //const { user } = useUser();
   const [open, setOPen] = useState(false)
   const [update, setUpdate] = useState(false)
-  if (!(user && user.id === item.userId)) return null
+  //if (!(user && user.id === item.userId)) return null;
+  
   return (
     <div className="grid grid-flow-col">
 
@@ -39,7 +40,7 @@ const Mutate = ({ item, onUpdate, onDelete, user }: props) => {
           )}
         </div>
       </div>
-      {!update && <div className='flex items-start justify-end'>
+      {!update && (user && user.id === item.userId) ? <div className='flex items-start justify-end'>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon">
@@ -78,7 +79,7 @@ const Mutate = ({ item, onUpdate, onDelete, user }: props) => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </div>}
+      </div>:null}
     </div>
   )
 }
