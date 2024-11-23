@@ -9,7 +9,7 @@ import { ChatUnreadStatus } from '@/payload-types'
 const PORT = process.env.SOCKET_PORT || 4000
 let activeUsers = new Map<string, string>()
 let userList: any[] = []
-export function GET(_req: NextApiRequest) {
+export function GET() {
   //@ts-ignore
   if (global.io) {
     return NextResponse.json({

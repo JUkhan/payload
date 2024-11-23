@@ -12,7 +12,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separetor'
+//import { Separator } from '@/components/ui/separetor'
 import GroupChatComponent from './group'
 import { ChatGroup } from '@/payload-types'
 import { KeyValuePair } from 'tailwindcss/types/config'
@@ -48,13 +48,16 @@ const ChatWindow = () => {
           console.log(newObj)
           return newObj
         })
-        //toast.info(data.message)
+
         scrollToView()
         const { selectedGroup, unreadStatus } = getState()
 
         if (selectedGroup.groupName !== data.groupName) {
           const st = unreadStatus[data.groupName] || 0
           setUnreadStatus(data.groupName, st + 1)
+          toast(data.groupName + ` -  ${data.userName}`, {
+            description: data.message,
+          })
         }
         break
 
@@ -77,10 +80,14 @@ const ChatWindow = () => {
           return pre
         })
         break
+
+      case 'email':
+        console.log('Email sending to:')
+        console.log(data)
     }
   })
   const [message, setMessage] = useState('')
-  const [height, setHeight] = useState(0)
+  const [[width, height], setHeight] = useState([0,0])
   const [isPrivate, setPrivate] = useState(0)
   //const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any)
   const scrollElmRef = useRef<HTMLDivElement>(null)
@@ -91,15 +98,15 @@ const ChatWindow = () => {
     if (scrollElmRef.current) {
       scrollElmRef.current.scrollIntoView()
     }
-    setHeight(window.innerHeight - 255)
+    setHeight(s=>[inputRef.current?.clientWidth??700, window.innerHeight - 150])
     const handleSize = () => {
-      setHeight((_) => window.innerHeight - 255)
+      setHeight((_) =>[inputRef.current?.clientWidth??700, window.innerHeight - 150])
     }
     window.addEventListener('resize', handleSize)
-    console.log('activeuser',io, loggedInUser, users)
-    if(loggedInUser){
+    console.log('activeuser', io, loggedInUser, users)
+    if (loggedInUser) {
       console.log('---------', loggedInUser)
-    io.current?.emit('activeUser', loggedInUser, users)
+      io.current?.emit('activeUser', loggedInUser, users)
     }
     return () => window.removeEventListener('resize', handleSize)
   }, [loggedInUser, users, io])
@@ -115,7 +122,7 @@ const ChatWindow = () => {
       groupId: selectedGroup.id,
       groupName: selectedGroup.groupName,
       userName: `${loggedInUser?.name}`,
-      groupUsers:selectedGroup.users,
+      groupUsers: selectedGroup.users,
       message,
     })
     setMessage('')
@@ -124,6 +131,7 @@ const ChatWindow = () => {
   const getPrivateName = (groupName: string) => {
     return groupName.replace(userName, '').replace(',', '')
   }
+  //
   return (
     <TooltipProvider>
       <div style={{ height: toggleWindow ? height : 0 }} className="ml-2 mr-2 mb-2">
@@ -203,63 +211,67 @@ const ChatWindow = () => {
                 />
               )}
             </div>
-            <div className="flex flex-col items-center">
-              <ScrollArea
-                ref={scrollElmRef}
-                className="md:w-[500px] lg:w-[1000px]"
-                style={{ height: height - 95 }}
-              >
-                {msgObj[selectedGroup.groupName]?.map((m) => (
-                  <div key={m.id}>
-                    <div
-                      className={cn({
-                        'flex flex-col items-end justify-end': m.userName === userName,
-                      })}
-                    >
-                      <div className="text-xs">
-                        {m.userName}{' '}
-                        <i className="text-slate-500">
-                          {formatDistanceToNowStrict(new Date(m.createdAt), { addSuffix: true })}
-                        </i>
-                      </div>
+            {/* <div className="flex flex-col items-center"> */}
+            <ScrollArea
+              ref={scrollElmRef}
+              className="p-2"
+              style={{ height: height - 95 }}
+            >
+              <div className="flex flex-col items-center">
+                <div style={{width:width+60}}>
+                  {msgObj[selectedGroup.groupName]?.map((m) => (
+                    <div key={m.id}>
                       <div
-                        className={cn(
-                          'bg-rose-100 p-2 pl-3 pr-3 rounded mt-1 mb-4 inline-block max-w-[800px]',
-                          { 'bg-slate-200': m.userName === userName },
-                        )}
+                        className={cn({
+                          'flex flex-col items-end justify-end': m.userName === userName,
+                        })}
                       >
-                        <MarkdownView
-                          markdown={m.message}
-                          options={{ tables: true, emoji: true }}
-                        />
+                        <div className="text-xs">
+                          {m.userName}{' '}
+                          <i className="text-slate-500">
+                            {formatDistanceToNowStrict(new Date(m.createdAt), { addSuffix: true })}
+                          </i>
+                        </div>
+                        <div
+                          className={cn(
+                            'bg-rose-100 p-2 pl-3 pr-3 rounded mt-1 mb-4 inline-block max-w-[800px]',
+                            { 'bg-slate-200': m.userName === userName },
+                          )}
+                        >
+                          <MarkdownView
+                            markdown={m.message}
+                            options={{ tables: true, emoji: true }}
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </ScrollArea>
-
-              <div className="flex items-center justify-center">
-                <Input
-                  ref={inputRef}
-                  className="inline-block sd:w-[400px] md:w-[500px] lg:w-[1000px]"
-                  value={message}
-                  placeholder="Type a message"
-                  onKeyUp={(ev) => {
-                    if (ev.key === 'Enter') {
-                      sendMessage()
-                    }
-                  }}
-                  onChange={(ev) => setMessage(ev.target.value)}
-                ></Input>
-                <Button
-                  disabled={!!!(selectedGroup?.id && message && loggedInUser)}
-                  className="primary"
-                  onClick={sendMessage}
-                >
-                  Send
-                </Button>
+                  ))}
+                </div>
               </div>
+            </ScrollArea>
+
+            <div className="flex items-center justify-center">
+              <Input
+                ref={inputRef}
+                className="inline-block sm:w-[400px] md:w-[500px] lg:w-[1000px]"
+                value={message}
+                placeholder="Type a message"
+                onKeyUp={(ev) => {
+                  if (ev.key === 'Enter') {
+                    sendMessage()
+                  }
+                }}
+                onChange={(ev) => setMessage(ev.target.value)}
+              ></Input>
+              <Button
+                disabled={!!!(selectedGroup?.id && message && loggedInUser)}
+                className="primary"
+                onClick={sendMessage}
+              >
+                Send
+              </Button>
             </div>
+            {/* </div> */}
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

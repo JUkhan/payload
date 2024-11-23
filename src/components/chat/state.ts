@@ -16,7 +16,7 @@ export type ChatState = {
 export const { getState, setState, dispatch, useStateEffect, useSelector, select } =
   createState<ChatState>({
     loggedInUser: null,
-    toggleWindow:true,
+    toggleWindow:false,
     groups:[],
     unreadStatus:{},
     selectedGroup:{} as any

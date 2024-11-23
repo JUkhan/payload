@@ -8,7 +8,7 @@ const UpdateComment = ({item, onUpdate, cb}:{item:any, onUpdate:any, cb:any}) =>
     //const {user}=useUser()
     const [comment, setComment]=React.useState(item.comment)
     const [hide, setHide]=React.useState(false)
-    const txtRef=useRef<any>()
+    const txtRef=useRef<any>(null)
     useEffect(()=>{
         txtRef.current.focus()
     },[])
