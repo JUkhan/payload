@@ -19,7 +19,8 @@ import { KeyValuePair } from 'tailwindcss/types/config'
 import { toast } from 'sonner'
 import { setState, useSelector, select, getUnreadStatus, setUnreadStatus, getState } from './state'
 import useWebSocketConnectionHook from './useWebSocketConnectionHook'
-import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict'
+import { format, } from 'date-fns/format'
+import {getTime} from 'date-fns/getTime'
 import { Badge } from '@/components/ui/badge'
 
 const ChatWindow = () => {
@@ -179,6 +180,7 @@ const ChatWindow = () => {
                     }
                     setState({ selectedGroup: group })
                     setUnreadStatus(group.groupName, 0)
+                    scrollToView()
                   }}
                   className={cn('p-2 cursor-pointer pl-4 font-semibold hover:bg-purple-100', {
                     'bg-purple-200': group.id === selectedGroup.id,
@@ -211,7 +213,7 @@ const ChatWindow = () => {
                 />
               )}
             </div>
-            {/* <div className="flex flex-col items-center"> */}
+           
             <ScrollArea
               ref={scrollElmRef}
               className="p-2"
@@ -219,23 +221,23 @@ const ChatWindow = () => {
             >
               <div className="flex flex-col items-center">
                 <div style={{width:width+60}}>
-                  {msgObj[selectedGroup.groupName]?.map((m) => (
+                  {msgObj[selectedGroup.groupName]?.map((m, i) => (
                     <div key={m.id}>
                       <div
                         className={cn({
                           'flex flex-col items-end justify-end': m.userName === userName,
                         })}
                       >
-                        <div className="text-xs">
+                        {i>0 && m.userName==msgObj[selectedGroup.groupName][i-1].userName && ((getTime(new Date(m.createdAt)) - getTime(new Date(msgObj[selectedGroup.groupName][i-1].createdAt)))/60000)<5.0?null:<div className="text-xs mt-2">
                           {m.userName}{' '}
                           <i className="text-slate-500">
-                            {formatDistanceToNowStrict(new Date(m.createdAt), { addSuffix: true })}
+                            {format(new Date(m.createdAt), 'eeee MM/dd/yyyy pp')}
                           </i>
-                        </div>
+                        </div>}
                         <div
                           className={cn(
-                            'bg-rose-100 p-2 pl-3 pr-3 rounded mt-1 mb-4 inline-block max-w-[800px]',
-                            { 'bg-slate-200': m.userName === userName },
+                            'bg-lime-300 p-2 pl-3 pr-3 rounded mt-1 inline-block max-w-[800px]',
+                            { 'bg-slate-200': m.userName === userName }
                           )}
                         >
                           <MarkdownView
@@ -257,7 +259,7 @@ const ChatWindow = () => {
                 value={message}
                 placeholder="Type a message"
                 onKeyUp={(ev) => {
-                  if (ev.key === 'Enter') {
+                  if (ev.key === 'Enter' && !!(selectedGroup?.id && message && loggedInUser)) {
                     sendMessage()
                   }
                 }}
@@ -271,7 +273,7 @@ const ChatWindow = () => {
                 Send
               </Button>
             </div>
-            {/* </div> */}
+           
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
