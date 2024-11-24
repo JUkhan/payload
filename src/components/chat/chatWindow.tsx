@@ -216,8 +216,8 @@ const ChatWindow = () => {
            
             <ScrollArea
               ref={scrollElmRef}
-              className="p-2"
-              style={{ height: height - 95 }}
+              className="p-2 pb-8"
+              style={{ height: height - 100 }}
             >
               <div className="flex flex-col items-center">
                 <div style={{width:width+60}}>
