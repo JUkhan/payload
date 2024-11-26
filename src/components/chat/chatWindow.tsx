@@ -68,7 +68,7 @@ const ChatWindow = () => {
             if (data.users.find((it: any) => it.userId === pre.loggedInUser?.email)) {
               const groups = select((state) => state.groups)
               groups.unshift(data)
-              let sg = selectedGroup
+              let sg = pre.selectedGroup
               if (data.creatorId === pre.loggedInUser?.email) {
                 sg = data
               } else {
