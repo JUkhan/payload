@@ -2,8 +2,6 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-//import { useUser, UserContextType } from "@/providers/user-provider";
 import { Input } from '@/components/ui/input'
 import { Plus, CirclePlus } from 'lucide-react'
 import { cn } from '@/utilities/cn'
@@ -12,106 +10,140 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 import { ScrollArea } from '@/components/ui/scroll-area'
-//import { Separator } from '@/components/ui/separetor'
 import GroupChatComponent from './group'
-import { ChatGroup } from '@/payload-types'
-import { KeyValuePair } from 'tailwindcss/types/config'
 import { toast } from 'sonner'
-import { setState, useSelector, select, getUnreadStatus, setUnreadStatus, getState } from './state'
-import useWebSocketConnectionHook from './useWebSocketConnectionHook'
-import { format, } from 'date-fns/format'
-import {getTime} from 'date-fns/getTime'
+import { saveToLocal } from './state'
+import useSignalrConnectionHook from './useSignalrConnection'
+import { format } from 'date-fns/format'
+import { getTime } from 'date-fns/getTime'
 import { Badge } from '@/components/ui/badge'
 
-const ChatWindow = () => {
-  const [msgObj, setMsgObj] = useState<KeyValuePair<string, any[]>>({})
-  const { loggedInUser, toggleWindow, groups, getMessages, unreadStatus, selectedGroup, users } =
-    useSelector((s) => s)
-
-  const io = useWebSocketConnectionHook((listenningOn: string, data: any) => {
+type User = { name: string; email: string }
+type Params = {
+  hubUrl: string
+  currentUser: User
+  userList: User[]
+  hideWindow?: boolean
+  bufferHeight?: number
+  unreadStatusSignal?: (status: Record<string, number>) => void
+}
+type Group = {
+  id: string
+  groupName: string
+  isPrivate: boolean
+  usersJson: string
+  message?: string
+  [key: string]: any
+}
+const ChatWindow: React.FC<Params> = ({
+  hubUrl,
+  currentUser,
+  userList,
+  hideWindow = true,
+  bufferHeight = 150,
+  unreadStatusSignal,
+}) => {
+  const [{ groups, selectedGroup, msgObj, unreadStatus }, setState] = useState<{
+    groups: Group[]
+    selectedGroup: Group
+    msgObj: any
+    unreadStatus: Record<string, number>
+  }>({ groups: [], selectedGroup: {} as any, msgObj: {}, unreadStatus: {} })
+  
+  const io = useSignalrConnectionHook(hubUrl, (listenningOn: string, data: any) => {
     switch (listenningOn) {
-      case 'group':
-        setMsgObj((pre) => {
-          if (pre[data.groupName] && pre[data.groupName].length > 0) {
-            const createdAt = pre[data.groupName][pre[data.groupName].length - 1].createdAt
+      case 'connected':
+        io.current?.invoke('ActiveUser', currentUser, userList)
+        break
+      case 'activeUser':
+        setState((pre) => ({ ...pre, groups: data.groups, unreadStatus: data.unreadStatus }))
+        if (typeof unreadStatusSignal === 'function') {
+          unreadStatusSignal(data.unreadStatus)
+        }
+        break
+      case 'messagesByGroupId':
+        setState((pre) => ({
+          ...pre,
+          msgObj: { ...pre.msgObj, [data[1]]: data[0] },
+        }))
 
+        break
+      case 'groupMessage':
+        setState((pre) => {
+          const len = pre.msgObj[data.groupName] ? pre.msgObj[data.groupName].length : 0
+          if (pre.msgObj[data.groupName] && len > 0) {
+            const createdAt = pre.msgObj[data.groupName][len - 1].createdAt
             if (createdAt === data.createdAt) {
               return pre
             }
           }
           const newObj = Object.assign({}, pre)
 
-          if (newObj[data.groupName]) {
-            newObj[data.groupName] = [...newObj[data.groupName], data]
+          if (newObj.msgObj[data.groupName]) {
+            newObj.msgObj[data.groupName] = [...newObj.msgObj[data.groupName], data]
           } else {
-            newObj[data.groupName] = [data]
+            newObj.msgObj[data.groupName] = [data]
+            io.current?.invoke(
+              'MessagesByGroupId',
+              pre.groups.find((it) => it.groupName === data.groupName),
+            )
           }
-          console.log(newObj)
+          scrollToView()
+
+          if (pre.selectedGroup.groupName !== data.groupName) {
+            const st = pre.unreadStatus[data.groupName] || 0
+            newObj.unreadStatus = { ...newObj.unreadStatus, [data.groupName]: st + 1 }
+            toast(data.groupName + ` -  ${data.userName}`, {
+              description: data.message,
+            })
+            if (typeof unreadStatusSignal === 'function') {
+              setTimeout(() => {
+                unreadStatusSignal(newObj.unreadStatus)
+              }, 300)
+            }
+          }
           return newObj
         })
-
-        scrollToView()
-        const { selectedGroup, unreadStatus } = getState()
-
-        if (selectedGroup.groupName !== data.groupName) {
-          const st = unreadStatus[data.groupName] || 0
-          console.log(st)
-          setUnreadStatus(data.groupName, st + 1)
-          toast(data.groupName + ` -  ${data.userName}`, {
-            description: data.message,
-          })
-        }
         break
-
-      case 'join':
+      case 'newGroup':
         setState((pre) => {
-          if (!pre.groups?.find((it) => it.groupName === data.groupName)) {
-            if (data.users.find((it: any) => it.userId === pre.loggedInUser?.email)) {
-              const groups = select((state) => state.groups)
-              groups.unshift(data)
+          if (!pre.groups.find((it) => it.groupName === data.groupName)) {
+            if (data.usersJson.includes(currentUser.email)) {
+              const groups = [data, ...pre.groups]
               let sg = pre.selectedGroup
-              if (data.creatorId === pre.loggedInUser?.email) {
+              if (data.creatorId === currentUser.email) {
                 sg = data
               } else {
-                io.current?.disconnect()
-                io.current?.connect()
+                io.current?.stop()
               }
-              return { groups, selectedGroup: sg }
+              return { ...pre, groups, selectedGroup: sg }
             }
           }
           return pre
         })
         break
-
-      case 'email':
-        console.log('Email sending to:')
-        console.log(data)
     }
   })
   const [message, setMessage] = useState('')
-  const [[width, height], setHeight] = useState([0,0])
+  const [[width, height], setHeight] = useState([0, 0])
   const [isPrivate, setPrivate] = useState(0)
-  //const [selectedGroup, setSelectedGroup] = useState<ChatGroup>({} as any)
   const scrollElmRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    //setState({ unreadStatus: getUnreadStatus() })
     if (scrollElmRef.current) {
       scrollElmRef.current.scrollIntoView()
     }
-    setHeight(s=>[inputRef.current?.clientWidth??700, window.innerHeight - 150])
+    setHeight((s) => [inputRef.current?.clientWidth ?? 700, window.innerHeight - bufferHeight])
     const handleSize = () => {
-      setHeight((_) =>[inputRef.current?.clientWidth??700, window.innerHeight - 150])
+      setHeight((_) => [inputRef.current?.clientWidth ?? 700, window.innerHeight - bufferHeight])
     }
-    window.addEventListener('resize', handleSize)
-    console.log('activeuser', io, loggedInUser, users)
-    if (loggedInUser) {
-      console.log('---------', loggedInUser)
-      io.current?.emit('activeUser', loggedInUser, users)
+    window.addEventListener('resize', handleSize);
+    return () => {
+      window.removeEventListener('resize', handleSize)
+      saveToLocal(unreadStatus)
     }
-    return () => window.removeEventListener('resize', handleSize)
-  }, [loggedInUser, users, io])
+  }, [io, bufferHeight, unreadStatus])
   const scrollToView = (delay: number = 100) => {
     setTimeout(() => {
       if (scrollElmRef.current) {
@@ -120,23 +152,28 @@ const ChatWindow = () => {
     }, delay)
   }
   const sendMessage = () => {
-    io.current?.emit(selectedGroup.groupName === 'All Users' ? 'all' : 'group', {
-      groupId: selectedGroup.id,
-      groupName: selectedGroup.groupName,
-      userName: `${loggedInUser?.name}`,
-      groupUsers: selectedGroup.users,
+    console.log(currentUser, {
+      ...selectedGroup,
       message,
     })
+    io.current?.invoke(
+      'GroupMessage',
+      currentUser,
+      {
+        ...selectedGroup,
+        message,
+      } as Group,
+    )
     setMessage('')
   }
-  const userName = `${loggedInUser?.name}`
+  const userName = `${currentUser.name}`
   const getPrivateName = (groupName: string) => {
     return groupName.replace(userName, '').replace(',', '')
   }
-  //
+  
   return (
     <TooltipProvider>
-      <div style={{ height: toggleWindow ? height : 0 }} className="ml-2 mr-2 mb-2">
+      <div style={{ height: hideWindow ? 0 : height }} className="ml-2 mr-2 mb-2">
         <ResizablePanelGroup direction="horizontal" className="rounded border">
           <ResizablePanel defaultSize={25} className="bg-gray-50">
             <div className="h-12 border-b">
@@ -172,16 +209,17 @@ const ChatWindow = () => {
               {groups?.map((group) => (
                 <div
                   key={group.id}
-                  onClick={async () => {
-                    if (!msgObj[group.groupName] && getMessages) {
-                      const data = await getMessages(group.id)
-                      setMsgObj((pre) => ({ ...pre, [group.groupName]: data }))
-                      scrollToView(500)
-                      if (inputRef.current) inputRef.current.focus()
+                  onClick={() => {
+                    if (!msgObj[group.groupName]) {
+                      io.current?.invoke('MessagesByGroupId', group)
                     }
-                    setState({ selectedGroup: group })
-                    setUnreadStatus(group.groupName, 0)
-                    scrollToView()
+                    setState((pre) => ({
+                      ...pre,
+                      selectedGroup: group,
+                      unreadStatus: { ...pre.unreadStatus, [group.groupName]: 0 },
+                    }))
+                    scrollToView(500)
+                    if (inputRef.current) inputRef.current.focus()
                   }}
                   className={cn('p-2 cursor-pointer pl-4 font-semibold hover:bg-purple-100', {
                     'bg-purple-200': group.id === selectedGroup.id,
@@ -208,20 +246,18 @@ const ChatWindow = () => {
                 </span>
               ) : (
                 <GroupChatComponent
+                  currentUser={currentUser}
+                  users={userList}
                   isPrivate={isPrivate === 1}
                   setPrivate={setPrivate}
                   socket={io.current!}
                 />
               )}
             </div>
-           
-            <ScrollArea
-              ref={scrollElmRef}
-              className="p-2 pb-8"
-              style={{ height: height - 100 }}
-            >
+
+            <ScrollArea ref={scrollElmRef} className="p-2 pb-8" style={{ height: height - 100 }}>
               <div className="flex flex-col items-center">
-                <div style={{width:width+60}}>
+                <div style={{ width: width + 60 }}>
                   {msgObj[selectedGroup.groupName]?.map((m, i) => (
                     <div key={m.id}>
                       <div
@@ -229,16 +265,23 @@ const ChatWindow = () => {
                           'flex flex-col items-end justify-end': m.userName === userName,
                         })}
                       >
-                        {i>0 && m.userName==msgObj[selectedGroup.groupName][i-1].userName && ((getTime(new Date(m.createdAt)) - getTime(new Date(msgObj[selectedGroup.groupName][i-1].createdAt)))/60000)<5.0?null:<div className="text-xs mt-2">
-                          {m.userName}{' '}
-                          <i className="text-slate-500">
-                            {format(new Date(m.createdAt), 'eeee MM/dd/yyyy pp')}
-                          </i>
-                        </div>}
+                        {i > 0 &&
+                        m.userName == msgObj[selectedGroup.groupName][i - 1].userName &&
+                        (getTime(new Date(m.createdAt)) -
+                          getTime(new Date(msgObj[selectedGroup.groupName][i - 1].createdAt))) /
+                          60000 <
+                          5.0 ? null : (
+                          <div className="text-xs mt-2">
+                            {m.userName}{' '}
+                            <i className="text-slate-500">
+                              {format(new Date(m.createdAt), 'eeee MM/dd/yyyy pp')}
+                            </i>
+                          </div>
+                        )}
                         <div
                           className={cn(
                             'bg-lime-300 p-2 pl-3 pr-3 rounded mt-1 inline-block max-w-[800px]',
-                            { 'bg-slate-200': m.userName === userName }
+                            { 'bg-slate-200': m.userName === userName },
                           )}
                         >
                           <MarkdownView
@@ -260,21 +303,20 @@ const ChatWindow = () => {
                 value={message}
                 placeholder="Type a message"
                 onKeyUp={(ev) => {
-                  if (ev.key === 'Enter' && !!(selectedGroup?.id && message && loggedInUser)) {
+                  if (ev.key === 'Enter' && !!(selectedGroup?.id && message && currentUser)) {
                     sendMessage()
                   }
                 }}
                 onChange={(ev) => setMessage(ev.target.value)}
               ></Input>
               <Button
-                disabled={!!!(selectedGroup?.id && message && loggedInUser)}
+                disabled={!!!(selectedGroup?.id && message && currentUser)}
                 className="primary"
                 onClick={sendMessage}
               >
                 Send
               </Button>
             </div>
-           
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>

@@ -22,6 +22,7 @@
   "dependencies": {
     "@fumadocs/mdx-remote": "^0.2.3",
     "@jukhan/nano-state": "npm:@jsr/jukhan__nano-state",
+    "@microsoft/signalr": "^8.0.7",
     "@payloadcms/db-mongodb": "beta",
     "@payloadcms/live-preview-react": "beta",
     "@payloadcms/next": "beta",

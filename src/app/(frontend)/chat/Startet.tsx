@@ -38,7 +38,7 @@ const Starter = ({ users, groups, getMessages, createGroup, loggedInUser, unread
       setState({toggleWindow: false });
     };
   }, [createGroup, getMessages, groups, loggedInUser, users, unreadStatus]);
-  return <div></div>;
+  return <div>Mama</div>;
 };
 
 export default Starter;
