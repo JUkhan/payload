@@ -80,8 +80,8 @@ const GroupChatComponent = ({
       <Button
         disabled={
           isPrivate
-            ? !!!privateUserId
-            : !!!(group && selectedUsers && selectedUsers.length > 1)
+            ? !privateUserId
+            : !(group && selectedUsers && selectedUsers.length > 1)
         }
         size="sm"
         onClick={() => (isPrivate ? submitPrivateHandler() : submitHandler())}

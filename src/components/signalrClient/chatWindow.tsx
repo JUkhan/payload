@@ -66,7 +66,7 @@ const ChatWindow: React.FC<Params> = ({
           ...pre,
           msgObj: { ...pre.msgObj, [data[1]]: data[0] },
         }))
-
+        scrollToView();
         break
       case 'groupMessage':
         setState((pre) => {
@@ -78,22 +78,36 @@ const ChatWindow: React.FC<Params> = ({
             }
           }
           const newObj = Object.assign({}, pre)
-
+          const gname:string=data.groupName;
           if (newObj.msgObj[data.groupName]) {
             newObj.msgObj[data.groupName] = [...newObj.msgObj[data.groupName], data]
+            scrollToView()
           } else {
-            newObj.msgObj[data.groupName] = [data]
-            io.current?.invoke(
-              'MessagesByGroupId',
-              pre.groups.find((it) => it.groupName === data.groupName),
-            )
+            if(gname.endsWith("All Users")){
+              if(pre.groups[0].groupName.includes(gname.replace("All Users", ''))){
+                newObj.msgObj[data.groupName] = [data]
+                io.current?.invoke(
+                  'MessagesByGroupId',
+                  pre.groups.find((it) => it.groupName === data.groupName),
+                )
+              }
+            }else{
+              newObj.msgObj[data.groupName] = [data]
+              io.current?.invoke(
+                'MessagesByGroupId',
+                pre.groups.find((it) => it.groupName === data.groupName),
+              );
+            }
           }
-          scrollToView()
+          
 
           if (pre.selectedGroup.groupName !== data.groupName) {
+            if(gname.endsWith("All Users")){
+              if(!pre.groups[0].groupName.includes(gname.replace("All Users", ''))){return pre;}
+            }
             const st = pre.unreadStatus[data.groupName] || 0
             newObj.unreadStatus = { ...newObj.unreadStatus, [data.groupName]: st + 1 }
-            toast(data.groupName + ` -  ${data.userName}`, {
+            toast(`${getGroupName(data)} - ${data.userName}`, {
               description: data.message,
             })
             if (typeof unreadStatusSignal === 'function') {
@@ -167,8 +181,9 @@ const ChatWindow: React.FC<Params> = ({
     setMessage('')
   }
   const userName = `${currentUser.name}`
-  const getPrivateName = (groupName: string) => {
-    return groupName.replace(userName, '').replace(',', '')
+  const getGroupName=(group:Group)=>{
+    const name=(group?.groupName??'').replace(/\$@&\$.+\$@&\$/,'')
+    return group.isPrivate? name.replace(userName, '').replace(',', ''): name
   }
   
   return (
@@ -218,14 +233,14 @@ const ChatWindow: React.FC<Params> = ({
                       selectedGroup: group,
                       unreadStatus: { ...pre.unreadStatus, [group.groupName]: 0 },
                     }))
-                    scrollToView(500)
+                    scrollToView()
                     if (inputRef.current) inputRef.current.focus()
                   }}
                   className={cn('p-2 cursor-pointer pl-4 font-semibold hover:bg-purple-100', {
                     'bg-purple-200': group.id === selectedGroup.id,
                   })}
                 >
-                  <span>{group.isPrivate ? getPrivateName(group.groupName) : group.groupName}</span>
+                  <span>{getGroupName(group)}</span>
                   {unreadStatus[group.groupName] > 0 && (
                     <Badge className="ml-2" variant="destructive">
                       {unreadStatus[group.groupName]}
@@ -239,11 +254,7 @@ const ChatWindow: React.FC<Params> = ({
           <ResizablePanel className="bg-white" defaultSize={75}>
             <div className="flex items-center pl-4 h-12 border-b">
               {isPrivate === 0 ? (
-                <span>
-                  {selectedGroup.isPrivate
-                    ? getPrivateName(selectedGroup?.groupName)
-                    : selectedGroup?.groupName}
-                </span>
+                <span>{getGroupName(selectedGroup)}</span>
               ) : (
                 <GroupChatComponent
                   currentUser={currentUser}

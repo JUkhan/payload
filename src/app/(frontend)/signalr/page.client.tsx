@@ -10,7 +10,8 @@ const MakeComponent = ({users, user}:{users:any[], user:any}) => {
  }
   
   return <div>
-    <ChatWindow unreadStatusSignal={unreadSignal} hubUrl='https://localhost:7111/chatHub' currentUser={user} userList={users} hideWindow={false} bufferHeight={280}/>
+    
+     <ChatWindow unreadStatusSignal={unreadSignal} hubUrl='https://localhost:7111/chatHub' currentUser={user} userList={users} hideWindow={false} bufferHeight={280}/> 
   </div>;
 };
 

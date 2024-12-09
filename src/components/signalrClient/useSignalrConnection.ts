@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { HubConnectionBuilder, HubConnection } from '@microsoft/signalr'
 import {getUnreadStatus} from './state'
-const PORT = process.env.SOCKET_PORT || 4000
 
 const useSignalrConnectionHook = (
   signalrServer: string,
@@ -34,8 +33,9 @@ const useSignalrConnectionHook = (
       group.creatorId=creatorId;
       cb('newGroup', group)
     })
-    connection.on('groupMessage', function (message, groupName) {
+    connection.on('groupMessage', function (message, groupName, isPrivate) {
       message.groupName=groupName;
+      message.isPrivate=isPrivate;
       cb('groupMessage', message)
     })
     connection.on('ReceiveMessage', (user, message) => {
